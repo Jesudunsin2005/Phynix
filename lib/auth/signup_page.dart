@@ -234,7 +234,10 @@ class _SignupPagesState extends State<SignupPages> {
                   backgroundColor: Colors.orange,
                   padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                 ),
-                child: Text('Next step'),
+                child: Text(
+                  'Next step',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -340,7 +343,10 @@ class _SignupPagesState extends State<SignupPages> {
                 ),
                 child: _isLoading
                     ? CircularProgressIndicator(color: Colors.white)
-                    : Text('Create an account'),
+                    : Text(
+                        'Create an account',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
             ],
           ),
