@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -47,10 +46,10 @@ class MyApp extends StatelessWidget {
 
 class AuthWrapper extends StatefulWidget {
   @override
-  _AuthWrapperState createState() => _AuthWrapperState();
+  AuthWrapperState createState() => AuthWrapperState();
 }
 
-class _AuthWrapperState extends State<AuthWrapper> {
+class AuthWrapperState extends State<AuthWrapper> {
   bool _isLoading = true;
   User? _user;
 

@@ -13,7 +13,22 @@ class PhynixDashboard extends StatefulWidget {
 }
 
 class _PhynixDashboardState extends State<PhynixDashboard> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    // Get initial index from route arguments, default to 0 if not provided
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final arguments = ModalRoute.of(context)?.settings.arguments;
+      if (arguments != null && arguments is int) {
+        setState(() {
+          _selectedIndex = arguments;
+        });
+      }
+    });
+    _selectedIndex = 0;
+  }
 
   // List of pages for bottom navigation
   final List<Widget> _pages = [
@@ -67,7 +82,7 @@ class _PhynixDashboardState extends State<PhynixDashboard> {
 }
 
 class _MainDashboardContent extends StatefulWidget {
-  const _MainDashboardContent({Key? key}) : super(key: key);
+  const _MainDashboardContent();
 
   @override
   __MainDashboardContentState createState() => __MainDashboardContentState();
@@ -75,13 +90,26 @@ class _MainDashboardContent extends StatefulWidget {
 
 class __MainDashboardContentState extends State<_MainDashboardContent> {
   String _username = 'User';
-  int _totalScore = 350;
+  int _totalScore = 0;
   String _currentLevel = 'Beginner';
+  bool _mounted = true;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+  }
+
+  @override
+  void dispose() {
+    _mounted = false;
+    super.dispose();
+  }
+
+  void safeSetState(VoidCallback fn) {
+    if (_mounted) {
+      setState(fn);
+    }
   }
 
   Future<void> _fetchUserData() async {
@@ -117,14 +145,14 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
         } else {
           print('New profile created');
           print(insertResponse);
-          setState(() {
+          safeSetState(() {
             _currentLevel = "Beginner";
             _totalScore = 0;
           });
         }
       } else {
         // Profile exists
-        setState(() {
+        safeSetState(() {
           _currentLevel = response["current_level"];
           _totalScore = response["score"];
         });

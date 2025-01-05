@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   flutter_dotenv: ^5.2.1
   supabase_flutter: ^2.8.1
+  http: ^1.1.0
+  intl: ^0.18.0
 
 dev_dependencies:
   flutter_test:
