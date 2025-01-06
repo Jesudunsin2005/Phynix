@@ -8,7 +8,6 @@ class PhynixDashboard extends StatefulWidget {
   const PhynixDashboard({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _PhynixDashboardState createState() => _PhynixDashboardState();
 }
 
@@ -18,6 +17,7 @@ class _PhynixDashboardState extends State<PhynixDashboard> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = 0;
     // Get initial index from route arguments, default to 0 if not provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
@@ -27,15 +27,14 @@ class _PhynixDashboardState extends State<PhynixDashboard> {
         });
       }
     });
-    _selectedIndex = 0;
   }
 
   // List of pages for bottom navigation
   final List<Widget> _pages = [
-    _MainDashboardContent(),
-    QuizPage(),
-    LeaderboardPage(),
-    ProfilePage(),
+    const MainDashboardContent(),
+    const QuizPage(),
+    const LeaderboardPage(),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -50,7 +49,7 @@ class _PhynixDashboardState extends State<PhynixDashboard> {
       backgroundColor: Colors.white,
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // This is important
+        type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Colors.black,
@@ -81,18 +80,25 @@ class _PhynixDashboardState extends State<PhynixDashboard> {
   }
 }
 
-class _MainDashboardContent extends StatefulWidget {
-  const _MainDashboardContent();
+class MainDashboardContent extends StatefulWidget {
+  const MainDashboardContent({super.key});
 
   @override
-  __MainDashboardContentState createState() => __MainDashboardContentState();
+  _MainDashboardContentState createState() => _MainDashboardContentState();
 }
 
-class __MainDashboardContentState extends State<_MainDashboardContent> {
+class _MainDashboardContentState extends State<MainDashboardContent> {
   String _username = 'User';
   int _totalScore = 0;
   String _currentLevel = 'Beginner';
   bool _mounted = true;
+
+  // Add state variables for difficulty stats
+  final Map<String, Map<String, String>> _difficultyStats = {
+    'beginner': {'score': '0', 'count': '0'},
+    'intermediate': {'score': '0', 'count': '0'},
+    'advanced': {'score': '0', 'count': '0'},
+  };
 
   @override
   void initState() {
@@ -117,22 +123,21 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
     final user = supabase.auth.currentUser;
 
     if (user != null) {
-      setState(() {
+      safeSetState(() {
         _username = user.userMetadata?['username'] ??
             user.userMetadata?['fullname'] ??
             user.email?.split('@').first ??
             'User';
       });
 
-      final response = await supabase
+      final profileResponse = await supabase
           .from('profile')
           .select('*')
           .eq('id', user.id)
           .limit(1)
           .maybeSingle();
 
-      print(response);
-      if (response == null) {
+      if (profileResponse == null) {
         // Profile does not exist, create a new one
         final insertResponse = await supabase.from('profile').insert({
           'id': user.id,
@@ -144,7 +149,6 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
           print(insertResponse?["error"].message);
         } else {
           print('New profile created');
-          print(insertResponse);
           safeSetState(() {
             _currentLevel = "Beginner";
             _totalScore = 0;
@@ -153,12 +157,62 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
       } else {
         // Profile exists
         safeSetState(() {
-          _currentLevel = response["current_level"];
-          _totalScore = response["score"];
+          _currentLevel = profileResponse["current_level"];
+          _totalScore = profileResponse["score"];
         });
       }
 
-      print(_username);
+      // Get the start of current week
+      final now = DateTime.now().toUtc();
+      final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+      final startOfWeekDate =
+          DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+
+      try {
+        // Fetch quiz statistics for current week
+        final response = await supabase
+            .from('quiz_sessions')
+            .select()
+            .eq('user_id', user.id)
+            .gte('created_at', startOfWeekDate.toIso8601String())
+            .lt('created_at', now.toIso8601String());
+
+        // Group sessions by difficulty
+        final Map<String, List<Map<String, dynamic>>> groupedSessions = {
+          'beginner': [],
+          'intermediate': [],
+          'advanced': [],
+        };
+
+        for (var session in response) {
+          String difficulty = session['difficulty'];
+          if (groupedSessions.containsKey(difficulty)) {
+            groupedSessions[difficulty]!.add(session);
+          }
+        }
+
+        // Calculate statistics for each difficulty
+        safeSetState(() {
+          groupedSessions.forEach((difficulty, sessions) {
+            if (sessions.isEmpty) {
+              _difficultyStats[difficulty] = {'score': '0', 'count': '0'};
+            } else {
+              // Calculate average score
+              double avgScore = sessions
+                      .map((s) => s['score'] as int)
+                      .reduce((a, b) => a + b) /
+                  sessions.length;
+
+              _difficultyStats[difficulty] = {
+                'score': avgScore.toStringAsFixed(1),
+                'count': sessions.length.toString()
+              };
+            }
+          });
+        });
+      } catch (e) {
+        print('Error fetching quiz statistics: $e');
+      }
     }
   }
 
@@ -204,50 +258,71 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
               )
             ]),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 100,
-              child: Card(
-                color: primaryColor,
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                      top: 16.0, bottom: 16.0, left: 30.0, right: 30.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
+            Card(
+              color: primaryColor,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: 16.0, horizontal: 24.0),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return IntrinsicHeight(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            children: [
-                              Text('Total Score',
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Total Score',
                                   style: const TextStyle(
                                     fontSize: 16,
-                                  )),
-                              Text('$_totalScore',
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$_totalScore',
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                  ))
-                            ],
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                          Column(
-                            children: [
-                              Text('Current Level',
+                          const VerticalDivider(
+                            color: Colors.white24,
+                            thickness: 1,
+                          ),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Current Level',
                                   style: const TextStyle(
                                     fontSize: 16,
-                                  )),
-                              Text(_currentLevel,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _currentLevel,
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                  ))
-                            ],
-                          )
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
-                      )
-                    ],
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -262,7 +337,7 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AchievementsWidget(),
+                    const AchievementsWidget(),
                     const SizedBox(height: 16),
                     Divider(
                       color: primaryColor,
@@ -271,20 +346,20 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
                     const SizedBox(height: 16),
                     _buildDifficultyCard(
                       'Beginner Level',
-                      '50',
-                      '1hrs 30mins',
+                      _difficultyStats['beginner']!['score']!,
+                      '${_difficultyStats['beginner']!['count']} Quizzes',
                     ),
                     const SizedBox(height: 16),
                     _buildDifficultyCard(
                       'Intermediate Level',
-                      '50',
-                      '1hrs',
+                      _difficultyStats['intermediate']!['score']!,
+                      '${_difficultyStats['intermediate']!['count']!} Quizzes',
                     ),
                     const SizedBox(height: 16),
                     _buildDifficultyCard(
                       'Advanced Level',
-                      '50',
-                      '30mins',
+                      _difficultyStats['advanced']!['score']!,
+                      '${_difficultyStats['advanced']!['count']!} Quizzes',
                     ),
                     const SizedBox(height: 16),
                     const Divider(),
@@ -300,42 +375,44 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
     );
   }
 
-  Widget _buildDifficultyCard(
-    String title,
-    String score,
-    String duration,
-  ) {
-    return SizedBox(
-        height: 120,
-        child: Card(
-          color: Colors.grey[200],
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
+  Widget _buildDifficultyCard(String title, String score, String count) {
+    return Card(
+      color: Colors.grey[200],
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   title,
                   style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Avg score: $score',
                   style: const TextStyle(fontSize: 14, color: Colors.black),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Avg duration: $duration',
+                  'Completed: $count',
                   style: const TextStyle(fontSize: 14, color: Colors.black),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
-            ),
-          ),
-        ));
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildOffersAndRewardsSection(context) {
@@ -411,6 +488,7 @@ class __MainDashboardContentState extends State<_MainDashboardContent> {
 }
 
 class AchievementsWidget extends StatelessWidget {
+  const AchievementsWidget({super.key});
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
@@ -423,7 +501,7 @@ class AchievementsWidget extends StatelessWidget {
           style: TextStyle(
               fontSize: 20, color: primaryColor, fontWeight: FontWeight.bold),
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -436,12 +514,12 @@ class AchievementsWidget extends StatelessWidget {
                   height: 50,
                 ),
                 Container(
-                  padding: EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: Colors.pink,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
+                  child: const Text(
                     'x2',
                     style: TextStyle(
                       color: Colors.white,
@@ -451,7 +529,7 @@ class AchievementsWidget extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Image.asset(
               'assets/yolo.png',
               width: 50,

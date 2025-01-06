@@ -269,7 +269,7 @@ class QuizPageState extends State<QuizPage> {
     try {
       final response = await http.get(
         Uri.parse(
-            'https://questions.aloc.com.ng/api/v2/m/5?subject=physics&random=true&withComprehension=true'),
+            'https://questions.aloc.com.ng/api/v2/m/50?subject=physics&random=true&withComprehension=true'),
         headers: {
           'AccessToken': 'ALOC-fe1a9e2acf0e9b7507c4',
         },
