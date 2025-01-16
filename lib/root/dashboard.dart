@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phynix/root/badge.dart';
 import 'package:phynix/root/leaderboard.dart';
 import 'package:phynix/root/profile.dart';
 import 'package:phynix/root/quiz.dart';
@@ -369,12 +370,6 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AchievementsWidget(),
-                    const SizedBox(height: 16),
-                    Divider(
-                      color: primaryColor,
-                      height: 5,
-                    ),
                     const SizedBox(height: 16),
                     const SizedBox(height: 16),
                     _buildSubjectSection('Physics'),
@@ -385,7 +380,13 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
                     const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 16),
+                    Divider(
+                      color: primaryColor,
+                      height: 5,
+                    ),
                     // _buildOffersAndRewardsSection(context),
+                    const SizedBox(height: 16),
+                    const AchievementsWidget(),
                   ],
                 ),
               ),
@@ -528,56 +529,126 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
 }
 
 class AchievementsWidget extends StatelessWidget {
+  static final supabase = Supabase.instance.client;
+
   const AchievementsWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          "Achievements",
-          style: TextStyle(
-              fontSize: 20, color: primaryColor, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              alignment: Alignment.bottomLeft,
-              children: [
-                Image.asset(
-                  'assets/shark.png',
-                  width: 50,
-                  height: 50,
-                ),
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.pink,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'x2',
+    return FutureBuilder<int>(
+      future: _getCompletedQuestions(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
+
+        final completedQuestions = snapshot.data ?? 0;
+        final earnedBadges = BadgeSystem.getEarnedBadges(completedQuestions);
+        final displayBadges = earnedBadges.length > 3
+            ? earnedBadges.sublist(earnedBadges.length - 3)
+            : earnedBadges;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Achievements",
                     style: TextStyle(
+                      fontSize: 20,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BadgesPage(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "View All",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (displayBadges.isEmpty)
+                const Text(
+                  "Complete quizzes to earn badges!",
+                  style: TextStyle(color: Colors.grey),
+                )
+              else
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (int i = 0; i < displayBadges.length; i++) ...[
+                      _buildBadgeItem(displayBadges[i]),
+                      if (i < displayBadges.length - 1)
+                        const SizedBox(width: 10),
+                    ],
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(width: 10),
-            Image.asset(
-              'assets/yolo.png',
-              width: 50,
-              height: 50,
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        );
+      },
     );
+  }
+
+  Widget _buildBadgeItem(BadgeModel badge) {
+    return Tooltip(
+      message: badge.description,
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white10,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            badge.icon,
+            style: const TextStyle(fontSize: 24),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<int> _getCompletedQuestions() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final response = await supabase
+        .from('quiz_sessions')
+        .select('count')
+        .eq('user_id', user.id)
+        .eq('completed', true)
+        .single();
+
+    return response['count'] as int;
   }
 }

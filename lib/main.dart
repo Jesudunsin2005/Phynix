@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:phynix/root/badge.dart';
 import 'package:phynix/root/history.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignupPages(),
         '/home': (context) => const PhynixDashboard(),
         '/quiz-history': (context) => QuizHistoryPage(), // Add this line
+        '/badges': (context) => BadgesPage(),
       },
     );
   }
