@@ -21,6 +21,7 @@ class _SignupPagesState extends State<SignupPages> {
   bool _termsAccepted = false;
   bool _isLoading = false;
   bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
 
   @override
   void dispose() {
@@ -285,10 +286,11 @@ class _SignupPagesState extends State<SignupPages> {
             controller: _confirmPasswordController,
             label: 'Repeat password',
             isPassword: true,
-            passwordVisible: _passwordVisible,
+            passwordVisible: _confirmPasswordVisible, // Use separate state
             onPasswordVisibilityToggle: () {
               setState(() {
-                _passwordVisible = !_passwordVisible;
+                _confirmPasswordVisible =
+                    !_confirmPasswordVisible; // Toggle separate state
               });
             },
           ),

@@ -260,10 +260,6 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
               InkWell(
                 onTap: () {
                   Navigator.pushNamed(context, '/quiz-history');
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(builder: (context) => QuizHistoryPage()),
-                  // );
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -371,7 +367,6 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-                    const SizedBox(height: 16),
                     _buildSubjectSection('Physics'),
                     const SizedBox(height: 16),
                     _buildSubjectSection('Mathematics'),
@@ -455,77 +450,6 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
       ),
     );
   }
-
-  // Widget _buildOffersAndRewardsSection(context) {
-  //   Color primaryColor = Theme.of(context).primaryColor;
-
-  //   return Card(
-  //     color: Colors.grey[200],
-  //     child: Padding(
-  //       padding: const EdgeInsets.only(
-  //           top: 16.0, bottom: 16.0, left: 10.0, right: 10.0),
-  //       child: Column(
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: [
-  //           Text(
-  //             'Complete Offers & Gain Rewards',
-  //             style: TextStyle(
-  //               fontSize: 16,
-  //               fontWeight: FontWeight.bold,
-  //               color: primaryColor,
-  //             ),
-  //           ),
-  //           const SizedBox(height: 8),
-  //           _buildOfferRow('Daily Check-in', '2', context),
-  //           const SizedBox(height: 8),
-  //           _buildOfferRow('Get 5 questions at a go', '7', context),
-  //           const SizedBox(height: 8),
-  //           _buildOfferRow('Get 10 questions at a go', '2', context),
-  //           const SizedBox(height: 8),
-  //           _buildOfferRow('Complete level', '15', context),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildOfferRow(String title, String reward, context) {
-  //   Color primaryColor = Theme.of(context).primaryColor;
-
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //     children: [
-  //       Text(
-  //         title,
-  //         style: const TextStyle(fontSize: 14, color: Colors.black),
-  //       ),
-  //       Container(
-  //         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-  //         decoration: BoxDecoration(
-  //           color: primaryColor,
-  //           borderRadius: BorderRadius.circular(4),
-  //         ),
-  //         child: Row(
-  //           children: [
-  //             Icon(
-  //               Icons.stars,
-  //               color: Colors.grey[200],
-  //               size: 16,
-  //             ),
-  //             const SizedBox(width: 4),
-  //             Text(
-  //               reward,
-  //               style: const TextStyle(
-  //                 fontSize: 14,
-  //                 color: Color.fromARGB(255, 238, 238, 238),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 }
 
 class AchievementsWidget extends StatelessWidget {

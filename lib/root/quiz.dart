@@ -276,7 +276,7 @@ class QuizPageState extends State<QuizPage> {
     try {
       final response = await http.get(
         Uri.parse(
-            'https://questions.aloc.com.ng/api/v2/m/5?subject=$_selectedSubject&random=true&withComprehension=true'),
+            'https://questions.aloc.com.ng/api/v2/m/50?subject=$_selectedSubject&random=true&withComprehension=true'),
         headers: {
           'AccessToken': 'ALOC-fe1a9e2acf0e9b7507c4',
         },
@@ -598,6 +598,7 @@ class QuizPageState extends State<QuizPage> {
     if (!_difficultySelected) {
       return _DifficultySelectionView(
         onDifficultySelected: (difficulty) => _createNewQuiz(difficulty),
+        selectedSubject: _selectedSubject as String,
       );
     }
 
@@ -933,10 +934,10 @@ class _QuizContentView extends StatelessWidget {
 
 class _DifficultySelectionView extends StatelessWidget {
   final Function(String) onDifficultySelected;
+  final String selectedSubject;
 
-  const _DifficultySelectionView({
-    required this.onDifficultySelected,
-  });
+  const _DifficultySelectionView(
+      {required this.onDifficultySelected, required this.selectedSubject});
 
   @override
   Widget build(BuildContext context) {
@@ -960,7 +961,7 @@ class _DifficultySelectionView extends StatelessWidget {
               _buildLevelCard(
                 context,
                 title: 'Beginner',
-                description: 'Perfect for those new to physics',
+                description: 'Perfect for those new to $selectedSubject',
                 details: 'Basic concepts and fundamental principles',
                 timeEstimate: 'No limit',
                 onTap: () => onDifficultySelected('beginner'),
@@ -969,7 +970,7 @@ class _DifficultySelectionView extends StatelessWidget {
               _buildLevelCard(
                 context,
                 title: 'Intermediate',
-                description: 'For those who have a grasp of physics',
+                description: 'For those who have a grasp of $selectedSubject',
                 details: 'Less-complex problems and intermediate theories',
                 timeEstimate: '60 minutes',
                 onTap: () => onDifficultySelected('intermediate'),
@@ -978,7 +979,7 @@ class _DifficultySelectionView extends StatelessWidget {
               _buildLevelCard(
                 context,
                 title: 'Advanced',
-                description: 'For experienced physics enthusiasts',
+                description: 'For experienced $selectedSubject enthusiasts',
                 details: 'Complex problems and advanced theories',
                 timeEstimate: '30 minutes',
                 onTap: () => onDifficultySelected('advanced'),

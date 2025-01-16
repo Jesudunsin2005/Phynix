@@ -12,6 +12,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -153,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
   }) {
     return TextField(
       controller: controller,
-      obscureText: isPassword,
+      obscureText: isPassword ? _obscurePassword : false, // Modified this line
       keyboardType: keyboardType,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
@@ -166,7 +167,18 @@ class _LoginPageState extends State<LoginPage> {
           borderSide: BorderSide(color: Colors.orange),
         ),
         suffixIcon: isPassword
-            ? const Icon(Icons.visibility_off, color: Colors.white70)
+            ? IconButton(
+                // Changed to IconButton
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white70,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              )
             : null,
       ),
     );
