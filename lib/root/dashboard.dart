@@ -256,23 +256,37 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
                           color: Colors.black))
                 ],
               ),
-              Row(
-                children: [
-                  Icon(
-                    Icons.stars,
-                    size: 24.0,
-                    color: primaryColor,
+              InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, '/quiz-history');
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(builder: (context) => QuizHistoryPage()),
+                  // );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical:
+                          8.0), // Add some padding for better touch target
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.history_sharp,
+                        size: 24.0,
+                        color: primaryColor,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        "History",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    '20',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+                ),
               )
             ]),
             const SizedBox(height: 16),
