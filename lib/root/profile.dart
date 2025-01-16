@@ -80,13 +80,6 @@ class _ProfilePageState extends State<ProfilePage> {
         monthlyTotal += (quiz['score'] as num).toDouble();
       }
 
-      // Load achievements
-      final achievementsResponse =
-          await _supabase.from('Achievement').select().order('created_at');
-
-      final List<Map<String, dynamic>> achievements =
-          List<Map<String, dynamic>>.from(achievementsResponse);
-
       if (mounted) {
         setState(() {
           _username = profileData['username'] ?? 'App User';
@@ -96,7 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _totalQuizzes = completedQuizCount;
           _monthlyAverage =
               monthlyQuizzes.isEmpty ? 0 : monthlyTotal / monthlyQuizzes.length;
-          _achievements = achievements;
+
           _isLoading = false;
           _usernameController.text = _username;
         });
