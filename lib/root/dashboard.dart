@@ -90,16 +90,27 @@ class MainDashboardContent extends StatefulWidget {
 class _MainDashboardContentState extends State<MainDashboardContent> {
   String _username = 'User';
   int _totalScore = 0;
-  String _currentLevel = 'Beginner';
+  String _currentLevel = '';
   bool _mounted = true;
 
   // Add state variables for difficulty stats
-  final Map<String, Map<String, String>> _difficultyStats = {
-    'beginner': {'score': '0', 'count': '0'},
-    'intermediate': {'score': '0', 'count': '0'},
-    'advanced': {'score': '0', 'count': '0'},
+  final Map<String, Map<String, Map<String, String>>> _subjectStats = {
+    'physics': {
+      'beginner': {'score': '0', 'count': '0'},
+      'intermediate': {'score': '0', 'count': '0'},
+      'advanced': {'score': '0', 'count': '0'},
+    },
+    'mathematics': {
+      'beginner': {'score': '0', 'count': '0'},
+      'intermediate': {'score': '0', 'count': '0'},
+      'advanced': {'score': '0', 'count': '0'},
+    },
+    'chemistry': {
+      'beginner': {'score': '0', 'count': '0'},
+      'intermediate': {'score': '0', 'count': '0'},
+      'advanced': {'score': '0', 'count': '0'},
+    },
   };
-
   @override
   void initState() {
     super.initState();
@@ -129,6 +140,8 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
             user.email?.split('@').first ??
             'User';
       });
+
+      print(user);
 
       final profileResponse = await supabase
           .from('profile')
@@ -169,47 +182,52 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
           DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
 
       try {
-        // Fetch quiz statistics for current week
-        final response = await supabase
-            .from('quiz_sessions')
-            .select()
-            .eq('user_id', user.id)
-            .gte('created_at', startOfWeekDate.toIso8601String())
-            .lt('created_at', now.toIso8601String());
+        // Fetch quiz statistics for all subjects
+        for (String subject in _subjectStats.keys) {
+          final response = await supabase
+              .from('quiz_sessions')
+              .select()
+              .eq('user_id', user.id)
+              .eq('subject', subject)
+              .gte('created_at', startOfWeekDate.toIso8601String())
+              .lt('created_at', now.toIso8601String());
 
-        // Group sessions by difficulty
-        final Map<String, List<Map<String, dynamic>>> groupedSessions = {
-          'beginner': [],
-          'intermediate': [],
-          'advanced': [],
-        };
+          // Group sessions by difficulty for each subject
+          final Map<String, List<Map<String, dynamic>>> groupedSessions = {
+            'beginner': [],
+            'intermediate': [],
+            'advanced': [],
+          };
 
-        for (var session in response) {
-          String difficulty = session['difficulty'];
-          if (groupedSessions.containsKey(difficulty)) {
-            groupedSessions[difficulty]!.add(session);
-          }
-        }
-
-        // Calculate statistics for each difficulty
-        safeSetState(() {
-          groupedSessions.forEach((difficulty, sessions) {
-            if (sessions.isEmpty) {
-              _difficultyStats[difficulty] = {'score': '0', 'count': '0'};
-            } else {
-              // Calculate average score
-              double avgScore = sessions
-                      .map((s) => s['score'] as int)
-                      .reduce((a, b) => a + b) /
-                  sessions.length;
-
-              _difficultyStats[difficulty] = {
-                'score': avgScore.toStringAsFixed(1),
-                'count': sessions.length.toString()
-              };
+          for (var session in response) {
+            String difficulty = session['difficulty'];
+            if (groupedSessions.containsKey(difficulty)) {
+              groupedSessions[difficulty]!.add(session);
             }
+          }
+
+          // Calculate statistics for each difficulty within the subject
+          safeSetState(() {
+            groupedSessions.forEach((difficulty, sessions) {
+              if (sessions.isEmpty) {
+                _subjectStats[subject]![difficulty] = {
+                  'score': '0',
+                  'count': '0'
+                };
+              } else {
+                double avgScore = sessions
+                        .map((s) => s['score'] as int)
+                        .reduce((a, b) => a + b) /
+                    sessions.length;
+
+                _subjectStats[subject]![difficulty] = {
+                  'score': avgScore.toStringAsFixed(1),
+                  'count': sessions.length.toString()
+                };
+              }
+            });
           });
-        });
+        }
       } catch (e) {
         print('Error fetching quiz statistics: $e');
       }
@@ -344,27 +362,16 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
                       height: 5,
                     ),
                     const SizedBox(height: 16),
-                    _buildDifficultyCard(
-                      'Beginner Level',
-                      _difficultyStats['beginner']!['score']!,
-                      '${_difficultyStats['beginner']!['count']} Quizzes',
-                    ),
                     const SizedBox(height: 16),
-                    _buildDifficultyCard(
-                      'Intermediate Level',
-                      _difficultyStats['intermediate']!['score']!,
-                      '${_difficultyStats['intermediate']!['count']!} Quizzes',
-                    ),
+                    _buildSubjectSection('Physics'),
                     const SizedBox(height: 16),
-                    _buildDifficultyCard(
-                      'Advanced Level',
-                      _difficultyStats['advanced']!['score']!,
-                      '${_difficultyStats['advanced']!['count']!} Quizzes',
-                    ),
+                    _buildSubjectSection('Mathematics'),
+                    const SizedBox(height: 16),
+                    _buildSubjectSection('Chemistry'),
                     const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 16),
-                    _buildOffersAndRewardsSection(context),
+                    // _buildOffersAndRewardsSection(context),
                   ],
                 ),
               ),
@@ -375,116 +382,135 @@ class _MainDashboardContentState extends State<MainDashboardContent> {
     );
   }
 
-  Widget _buildDifficultyCard(String title, String score, String count) {
-    return Card(
-      color: Colors.grey[200],
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Avg score: $score',
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Completed: $count',
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOffersAndRewardsSection(context) {
-    Color primaryColor = Theme.of(context).primaryColor;
-
-    return Card(
-      color: Colors.grey[200],
-      child: Padding(
-        padding: const EdgeInsets.only(
-            top: 16.0, bottom: 16.0, left: 10.0, right: 10.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Complete Offers & Gain Rewards',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildOfferRow('Daily Check-in', '2', context),
-            const SizedBox(height: 8),
-            _buildOfferRow('Get 5 questions at a go', '7', context),
-            const SizedBox(height: 8),
-            _buildOfferRow('Get 10 questions at a go', '2', context),
-            const SizedBox(height: 8),
-            _buildOfferRow('Complete level', '15', context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOfferRow(String title, String reward, context) {
-    Color primaryColor = Theme.of(context).primaryColor;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildSubjectSection(String subject) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
-          style: const TextStyle(fontSize: 14, color: Colors.black),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: primaryColor,
-            borderRadius: BorderRadius.circular(4),
+          subject,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
           ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.stars,
-                color: Colors.grey[200],
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                reward,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color.fromARGB(255, 238, 238, 238),
-                ),
-              ),
-            ],
+        ),
+        const SizedBox(height: 8),
+        Card(
+          color: Colors.grey[200],
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildDifficultyRow('Beginner',
+                    _subjectStats[subject.toLowerCase()]!['beginner']!),
+                const Divider(),
+                _buildDifficultyRow('Intermediate',
+                    _subjectStats[subject.toLowerCase()]!['intermediate']!),
+                const Divider(),
+                _buildDifficultyRow('Advanced',
+                    _subjectStats[subject.toLowerCase()]!['advanced']!),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
+
+  Widget _buildDifficultyRow(String level, Map<String, String> stats) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            level,
+            style: const TextStyle(
+                fontWeight: FontWeight.w500, color: Colors.black),
+          ),
+          Text(
+            'Score: ${stats['score']}% (${stats['count']} quizzes)',
+            style: TextStyle(
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget _buildOffersAndRewardsSection(context) {
+  //   Color primaryColor = Theme.of(context).primaryColor;
+
+  //   return Card(
+  //     color: Colors.grey[200],
+  //     child: Padding(
+  //       padding: const EdgeInsets.only(
+  //           top: 16.0, bottom: 16.0, left: 10.0, right: 10.0),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'Complete Offers & Gain Rewards',
+  //             style: TextStyle(
+  //               fontSize: 16,
+  //               fontWeight: FontWeight.bold,
+  //               color: primaryColor,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           _buildOfferRow('Daily Check-in', '2', context),
+  //           const SizedBox(height: 8),
+  //           _buildOfferRow('Get 5 questions at a go', '7', context),
+  //           const SizedBox(height: 8),
+  //           _buildOfferRow('Get 10 questions at a go', '2', context),
+  //           const SizedBox(height: 8),
+  //           _buildOfferRow('Complete level', '15', context),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildOfferRow(String title, String reward, context) {
+  //   Color primaryColor = Theme.of(context).primaryColor;
+
+  //   return Row(
+  //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //     children: [
+  //       Text(
+  //         title,
+  //         style: const TextStyle(fontSize: 14, color: Colors.black),
+  //       ),
+  //       Container(
+  //         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  //         decoration: BoxDecoration(
+  //           color: primaryColor,
+  //           borderRadius: BorderRadius.circular(4),
+  //         ),
+  //         child: Row(
+  //           children: [
+  //             Icon(
+  //               Icons.stars,
+  //               color: Colors.grey[200],
+  //               size: 16,
+  //             ),
+  //             const SizedBox(width: 4),
+  //             Text(
+  //               reward,
+  //               style: const TextStyle(
+  //                 fontSize: 14,
+  //                 color: Color.fromARGB(255, 238, 238, 238),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }
 
 class AchievementsWidget extends StatelessWidget {
