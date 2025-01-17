@@ -120,7 +120,7 @@ class BadgesPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Questions Completed: $completedQuestions',
+                  'Quizzes Completed: $completedQuestions',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -160,7 +160,7 @@ class BadgesPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   _buildBadgeCard(nextBadge, false),
                   Text(
-                    '${nextBadge.requiredQuestions - completedQuestions} more questions to unlock',
+                    '${nextBadge.requiredQuestions - completedQuestions} more quizzes to unlock',
                     style: const TextStyle(
                       color: Colors.grey,
                     ),
@@ -274,7 +274,7 @@ class BadgeProgressWidget extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${completedQuestions}/${nextBadge.requiredQuestions} questions completed',
+              '${completedQuestions}/${nextBadge.requiredQuestions} quizzes completed',
               style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 12,

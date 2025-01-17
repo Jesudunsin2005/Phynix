@@ -212,8 +212,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 16),
                     _buildStatTile('Current Level', _currentLevel),
                     _buildStatTile('Total Score', _score.toStringAsFixed(0)),
-                    _buildStatTile(
-                        'Stars Balance', '⭐ ${_balance.toStringAsFixed(0)}'),
+                    // _buildStatTile(
+                    //     'Stars Balance', '⭐ ${_balance.toStringAsFixed(0)}'),
                     _buildStatTile(
                         'Completed Quizzes', _totalQuizzes.toString()),
                     _buildStatTile(
